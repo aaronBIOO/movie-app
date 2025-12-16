@@ -10,7 +10,10 @@ function TabIcon({ focused, icon, title }: any) {
     return (
       <ImageBackground
         source={images.highlight}
-        className="flex flex-row w-full min-w-[112px] min-h-14 mt-4 justify-center items-center rounded-full overflow-hidden"
+        className="
+         flex flex-row w-full min-w-[108px] min-h-14 mt-6 justify-center 
+         items-center rounded-full overflow-hidden mx-4
+        "
       >
         <Image source={icon} tintColor="#151312" className="size-5" />
         <Text className="text-secondary text-base font-semibold ml-2">
@@ -21,7 +24,7 @@ function TabIcon({ focused, icon, title }: any) {
   }
 
   return (
-    <View className="size-full justify-center items-center mt-4 rounded-full">
+    <View className="size-full justify-center items-center mt-6 rounded-full">
       <Image source={icon} tintColor="#A8B5DB" className="size-5" />
     </View>
   );
@@ -43,9 +46,8 @@ export default function TabsLayout() {
           borderRadius: 50,
           marginHorizontal: 20,
           marginBottom: 36,
-          paddingVertical: 5,
-          paddingHorizontal: 10,
-          height: 52,
+          paddingHorizontal: 20,
+          height: 60,
           position: "absolute",
           overflow: "hidden",
           borderWidth: 1,
