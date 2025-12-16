@@ -3,7 +3,7 @@ import React from 'react'
 
 const saved = () => {
   return (
-    <View>
+    <View className="flex h-screen items-center justify-center text-secondary">
       <Text>saved</Text>
     </View>
   )
