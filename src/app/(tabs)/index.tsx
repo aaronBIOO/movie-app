@@ -74,7 +74,7 @@ const Index = () => {
                 router.push("/search");
               }}
               placeholder="Search for a movie"
-              className={"flex-row items-center bg-dark-200 rounded-full px-5 py-4 w-[350px] h-[60px]"}
+              className={"flex-row items-center bg-dark-200 rounded-full px-5 py-4 w-[350px] h-[60px] mx-auto"}
             />
 
             {/* trending movies */}
@@ -102,7 +102,7 @@ const Index = () => {
 
             {/* latest movies */}
             <>
-              <Text className="text-lg text-white font-bold mt-5 mb-3">
+              <Text className="text-lg text-white font-bold mt-5 mb-3 ml-4">
                 Latest Movies
               </Text>
 
