@@ -70,7 +70,10 @@ export const getTrendingMovies = async (): Promise<
 // Auth Functions
 export const signInWithGoogle = async () => {
   try {
-    const redirectUri = AuthSession.makeRedirectUri();
+    const redirectUri = AuthSession.makeRedirectUri({
+      scheme: "movies",
+    });
+    console.log("Redirect URI:", redirectUri);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
