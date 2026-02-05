@@ -1,5 +1,6 @@
-import { View, TextInput, Image } from "react-native";
 import { icons } from "@/constants/icons";
+import { Ionicons } from "@expo/vector-icons";
+import { Image, TextInput, TouchableOpacity, View } from "react-native";
 
 interface Props {
   placeholder: string;
@@ -23,9 +24,15 @@ const SearchBar = ({ placeholder, value, onChangeText, onPress, className }: Pro
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
+        returnKeyType="search"
         className="flex-1 ml-2 text-white"
         placeholderTextColor="#A8B5DB"
       />
+      {value ? (
+        <TouchableOpacity onPress={() => onChangeText?.("")}>
+          <Ionicons name="close-circle" size={20} color="#A8B5DB" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
