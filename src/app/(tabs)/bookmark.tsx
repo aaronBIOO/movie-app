@@ -1,8 +1,18 @@
 import { icons } from "@/constants/icons";
-import { View, Text, Image } from "react-native";
+import { useAuth } from "@/context/AuthContext";
+import { Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Login from "../login";
 
-const Save = () => {
+const Bookmark = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!user) {
+    return <Login message="Sign in to view bookmarks" showGuestOption={false} />;
+  }
+
   return (
     <SafeAreaView className="bg-primary flex-1 px-10">
       <View className="flex justify-center items-center flex-1 flex-col gap-5">
@@ -13,4 +23,4 @@ const Save = () => {
   );
 };
 
-export default Save;
+export default Bookmark;
