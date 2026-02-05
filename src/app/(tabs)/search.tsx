@@ -75,6 +75,7 @@ const Search = () => {
                 placeholder="Search for a movie"
                 value={searchQuery}
                 onChangeText={handleSearch}
+                className={"flex-row items-center bg-dark-200 rounded-full px-5 py-4 w-[350px] h-[60px] mx-auto"}
               />
             </View>
 
