@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const useFetch = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
   const [data, setData] = useState<T | null>(null);
@@ -12,6 +12,7 @@ const useFetch = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
 
       const result = await fetchFunction();
       setData(result);
+      return result;
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("An unknown error occurred")
