@@ -1,4 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
@@ -61,4 +65,52 @@ export const getTrendingMovies = async (): Promise<
     console.error("Error fetching trending movies:", error);
     return undefined;
   }
+};
+
+// Auth Functions
+export const signInWithGoogle = async () => {
+  try {
+    const redirectUri = AuthSession.makeRedirectUri();
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUri,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) throw error;
+
+    const res = await WebBrowser.openAuthSessionAsync(
+      data.url,
+      redirectUri
+    );
+
+    if (res.type === "success") {
+      const { url } = res;
+      const hash = url.split("#")[1];
+      const params = hash.split("&").reduce((acc, part) => {
+        const [key, value] = part.split("=");
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      });
+
+      if (sessionError) throw sessionError;
+      return sessionData;
+    }
+  } catch (error) {
+    console.error("Error signing in with Google:", error);
+    throw error;
+  }
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
 };
