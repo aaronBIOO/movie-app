@@ -50,11 +50,11 @@ const Index = () => {
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
       if (searchQuery.trim()) {
-        const results = await loadSearchResults() as Movie[];
+        const results = await loadSearchResults();
 
         // Potential check for analytics if results exist
-        if (results && results.length > 0) {
-          await updateSearchCount(searchQuery, results[0]);
+        if (Array.isArray(results) && results.length > 0) {
+          await updateSearchCount(searchQuery, results[0] as Movie);
         }
       } else {
         resetSearchResults();
@@ -130,7 +130,7 @@ const Index = () => {
                       renderItem={({ item, index }) => (
                         <TrendingCard movie={item} index={index} />
                       )}
-                      keyExtractor={(item) => item.movie_id.toString()}
+                      keyExtractor={(item) => item.id.toString()}
                       ItemSeparatorComponent={() => <View className="w-4" />}
                     />
                   </View>

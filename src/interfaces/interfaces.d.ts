@@ -1,26 +1,29 @@
 interface Movie {
   id: number;
   title: string;
-  adult: boolean;
-  backdrop_path: string;
-  genre_ids: number[];
-  original_language: string;
-  original_title: string;
-  overview: string;
-  popularity: number;
-  poster_path: string;
-  release_date: string;
-  video: boolean;
-  vote_average: number;
-  vote_count: number;
+  poster_path?: string | null;
+  vote_average?: number;
+  release_date?: string;
+  adult?: boolean;
+  backdrop_path?: string | null;
+  genre_ids?: number[];
+  original_language?: string;
+  original_title?: string;
+  overview?: string | null;
+  popularity?: number;
+  video?: boolean;
+  vote_count?: number;
 }
 
 interface TrendingMovie {
-  searchTerm: string;
+  id: number;
+  searchterm: string;
   movie_id: number;
   title: string;
   count: number;
   poster_url: string;
+  vote_average?: number;
+  release_date?: string;
 }
 
 interface MovieDetails {
