@@ -15,7 +15,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
     const { data: existingMovies, error: fetchError } = await supabase
       .from("trending_movies")
       .select("*")
-      .eq("searchTerm", query)
+      .eq("searchterm", query)
       .limit(1);
 
     if (fetchError) throw fetchError;
@@ -24,7 +24,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
       const existingMovie = existingMovies[0];
       const { error: updateError } = await supabase
         .from("trending_movies")
-        .update({ count: existingMovie.count + 1 })
+        .update({ count: (existingMovie.count || 0) + 1 })
         .eq("id", existingMovie.id);
 
       if (updateError) throw updateError;
@@ -32,7 +32,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
       const { error: createError } = await supabase
         .from("trending_movies")
         .insert({
-          searchTerm: query,
+          searchterm: query,
           movie_id: movie.id,
           title: movie.title,
           count: 1,
@@ -43,7 +43,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
     }
   } catch (error) {
     console.error("Error updating search count:", error);
-    throw error;
+    // Don't throw, as this is a non-critical analytics function
   }
 };
 
@@ -116,4 +116,83 @@ export const signInWithGoogle = async () => {
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+};
+
+// --- Bookmarking Functions ---
+
+export const isBookmarked = async (movie_id: number) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("movie_id", movie_id)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error; // PGRST116 is "no rows returned"
+    return !!data;
+  } catch (error) {
+    console.error("Error checking bookmark status:", error);
+    return false;
+  }
+};
+
+export const addBookmark = async (movie: Movie | MovieDetails) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be logged in to bookmark movies");
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .insert({
+        user_id: user.id,
+        movie_id: movie.id,
+        title: movie.title,
+        poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+      });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error adding bookmark:", error);
+    throw error;
+  }
+};
+
+export const removeBookmark = async (movie_id: number) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be logged in to remove bookmarks");
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("movie_id", movie_id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error removing bookmark:", error);
+    throw error;
+  }
+};
+
+export const getUserBookmarks = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching bookmarks:", error);
+    return [];
+  }
 };
