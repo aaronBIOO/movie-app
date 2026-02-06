@@ -14,7 +14,9 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { icons } from '@/constants/icons';
+import { useAuth } from '@/context/AuthContext';
 import { fetchMovieDetails } from '@/services/api';
+import { addBookmark, isBookmarked, removeBookmark } from '@/services/supabase';
 import useFetch from '@/services/use-fetch';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -24,9 +26,11 @@ const TAB_BAR_HEIGHT = 70 + 36 + 20;
 const MovieDetails = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const scrollY = useSharedValue(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Gesture state for Modal
   const modalScale = useSharedValue(1);
@@ -38,6 +42,37 @@ const MovieDetails = () => {
     loading,
     error,
   } = useFetch(() => fetchMovieDetails(id as string));
+
+  React.useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (user && movie) {
+        const bookmarked = await isBookmarked(movie.id);
+        setIsSaved(bookmarked);
+      }
+    };
+    checkBookmarkStatus();
+  }, [user, movie]);
+
+  const handleBookmarkToggle = async () => {
+    if (!user) {
+      router.push('/login' as any);
+      return;
+    }
+
+    if (!movie) return;
+
+    try {
+      if (isSaved) {
+        await removeBookmark(movie.id);
+        setIsSaved(false);
+      } else {
+        await addBookmark(movie);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
+  };
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -184,8 +219,15 @@ const MovieDetails = () => {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-dark-200/80 p-3 rounded-full">
-            <Image source={icons.save} className="size-6" tintColor="#fff" />
+          <TouchableOpacity
+            className="bg-dark-200/80 p-3 rounded-full"
+            onPress={handleBookmarkToggle}
+          >
+            <Image
+              source={icons.save}
+              className="size-6"
+              tintColor={isSaved ? '#AB8BFF' : '#fff'}
+            />
           </TouchableOpacity>
         </SafeAreaView>
       </Animated.View>
