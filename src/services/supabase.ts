@@ -70,35 +70,42 @@ export const getTrendingMovies = async (): Promise<
 // Auth Functions
 export const signInWithGoogle = async () => {
   try {
+    // 1. Create the deep link address for the phone to return to after auth
     const redirectUri = AuthSession.makeRedirectUri({
       scheme: "movies",
     });
+    
     console.log("Redirect URI:", redirectUri);
-
+    
+    // 2. Configure the OAuth flow on Supabase servers and get the Google Login URL
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUri,
-        skipBrowserRedirect: true,
+        skipBrowserRedirect: true, // Let the app handle opening/closing the browser
       },
     });
 
     if (error) throw error;
-
+ 
+    // 3. Open the browser and wait for the OS to see the redirectUri "finish line"
     const res = await WebBrowser.openAuthSessionAsync(
       data.url,
       redirectUri
     );
 
+    // 4. If the user logged in successfully, extract tokens from the URL fragment
     if (res.type === "success") {
       const { url } = res;
       const hash = url.split("#")[1];
+      
       const params = hash.split("&").reduce((acc, part) => {
         const [key, value] = part.split("=");
         acc[key] = value;
         return acc;
       }, {} as Record<string, string>);
 
+      // 5. Hand the tokens to Supabase to save the session locally and verify the user
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: params.access_token,
         refresh_token: params.refresh_token,
@@ -114,9 +121,11 @@ export const signInWithGoogle = async () => {
 };
 
 export const signOut = async () => {
+  // Clear local storage and revoke the session on the Supabase server
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 };
+
 
 // --- Bookmarking Functions ---
 
