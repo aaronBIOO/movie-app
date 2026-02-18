@@ -15,7 +15,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
     const { data: existingMovies, error: fetchError } = await supabase
       .from("trending_movies")
       .select("*")
-      .eq("searchTerm", query)
+      .eq("searchterm", query)
       .limit(1);
 
     if (fetchError) throw fetchError;
@@ -24,7 +24,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
       const existingMovie = existingMovies[0];
       const { error: updateError } = await supabase
         .from("trending_movies")
-        .update({ count: existingMovie.count + 1 })
+        .update({ count: (existingMovie.count || 0) + 1 })
         .eq("id", existingMovie.id);
 
       if (updateError) throw updateError;
@@ -32,7 +32,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
       const { error: createError } = await supabase
         .from("trending_movies")
         .insert({
-          searchTerm: query,
+          searchterm: query,
           movie_id: movie.id,
           title: movie.title,
           count: 1,
@@ -43,7 +43,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
     }
   } catch (error) {
     console.error("Error updating search count:", error);
-    throw error;
+    // Don't throw, as this is a non-critical analytics function
   }
 };
 
@@ -70,32 +70,42 @@ export const getTrendingMovies = async (): Promise<
 // Auth Functions
 export const signInWithGoogle = async () => {
   try {
-    const redirectUri = AuthSession.makeRedirectUri();
-
+    // 1. Create the deep link address for the phone to return to after auth
+    const redirectUri = AuthSession.makeRedirectUri({
+      scheme: "movies",
+    });
+    
+    console.log("Redirect URI:", redirectUri);
+    
+    // 2. Configure the OAuth flow on Supabase servers and get the Google Login URL
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUri,
-        skipBrowserRedirect: true,
+        skipBrowserRedirect: true, // Let the app handle opening/closing the browser
       },
     });
 
     if (error) throw error;
-
+ 
+    // 3. Open the browser and wait for the OS to see the redirectUri "finish line"
     const res = await WebBrowser.openAuthSessionAsync(
       data.url,
       redirectUri
     );
 
+    // 4. If the user logged in successfully, extract tokens from the URL fragment
     if (res.type === "success") {
       const { url } = res;
       const hash = url.split("#")[1];
+      
       const params = hash.split("&").reduce((acc, part) => {
         const [key, value] = part.split("=");
         acc[key] = value;
         return acc;
       }, {} as Record<string, string>);
 
+      // 5. Hand the tokens to Supabase to save the session locally and verify the user
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: params.access_token,
         refresh_token: params.refresh_token,
@@ -111,6 +121,87 @@ export const signInWithGoogle = async () => {
 };
 
 export const signOut = async () => {
+  // Clear local storage and revoke the session on the Supabase server
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+};
+
+
+// --- Bookmarking Functions ---
+
+export const isBookmarked = async (movie_id: number) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("movie_id", movie_id)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error; // PGRST116 is "no rows returned"
+    return !!data;
+  } catch (error) {
+    console.error("Error checking bookmark status:", error);
+    return false;
+  }
+};
+
+export const addBookmark = async (movie: Movie | MovieDetails) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be logged in to bookmark movies");
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .insert({
+        user_id: user.id,
+        movie_id: movie.id,
+        title: movie.title,
+        poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+      });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error adding bookmark:", error);
+    throw error;
+  }
+};
+
+export const removeBookmark = async (movie_id: number) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be logged in to remove bookmarks");
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("movie_id", movie_id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error removing bookmark:", error);
+    throw error;
+  }
+};
+
+export const getUserBookmarks = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching bookmarks:", error);
+    return [];
+  }
 };
